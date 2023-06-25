@@ -41,7 +41,7 @@ PLATFORM_FLAGS = \
   -mthumb \
   -mfpu=fpv4-sp-d16 \
   -mfloat-abi=hard \
-  -std=gnu++11 \
+  -std=gnu++17 \
   -Wvla \
   -Wall \
   -Wextra \

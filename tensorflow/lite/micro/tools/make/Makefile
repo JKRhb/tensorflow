@@ -118,7 +118,7 @@ COMMON_FLAGS := \
   $(TAG_DEFINES)
 
 CXXFLAGS := \
-  -std=c++11 \
+  -std=c++17 \
   -fno-rtti \
   -fno-exceptions \
   -fno-threadsafe-statics \
