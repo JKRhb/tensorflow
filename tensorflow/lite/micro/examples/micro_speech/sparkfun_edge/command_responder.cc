@@ -23,6 +23,74 @@ limitations under the License.
 
 #include "am_bsp.h"  // NOLINT
 
+// Turns off all of the LEDs on the SparkFun Edge board.
+void ResetLeds() {
+  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
+  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_RED);
+  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
+  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
+}
+
+// Maps the prediction score to an LED color identifier.
+//
+// The LED identifier is encoded as a 32-bit unsigned
+// integer.
+//
+// Since the possible values of the prediction score range
+// from 0 to 255, we devided the number range into four
+// quartiles and assigned a color based on the position on
+// the SparkFun Edge board. This led us to the following
+// mapping:
+//
+// -   0 –  63 => red
+// -  64 – 127 => blue
+// - 128 – 191 => green
+// - 192 – 255 => yellow
+uint32_t DetermineLedColor(uint8_t score) {
+  if (score < 64) {
+    return AM_BSP_LED_RED;
+  }
+
+  if (score < 128) {
+    return AM_BSP_LED_BLUE;
+  }
+
+  if (score < 192) {
+    return AM_BSP_LED_GREEN;
+  }
+
+  return AM_BSP_LED_YELLOW;
+}
+
+// Turn on LEDs in relation to the prediction score.
+//
+// The score is mapped to the LEDs in relation to their
+// placement on the board, i.e. the red LED represents
+// the bottom quartile of the possible prediction scores
+// and the yellow LED represents the top quartile.
+//
+// Since the score is represented by an 8-bit unsigned
+// integer, we used the following (inclusive) ranges to
+// represent the scores by the four LEDs on the board:
+//
+// -   0 –  63 => red
+// -  64 – 127 => blue
+// - 128 – 191 => green
+// - 192 – 255 => yellow
+//
+// See the `DetermineLedColor` function above for the
+// concrete implementation.
+//
+// The appropriate LED will be set, after all LEDs have
+// been reset via the `ResetLeds` function.
+void VisualizePredictionScore(uint8_t score) {
+  ResetLeds();
+
+  uint32_t led_color = DetermineLedColor(score);
+
+  am_devices_led_on(am_bsp_psLEDs, led_color);
+}
+
 // This implementation will light up the LEDs on the board in response to
 // different commands.
 void RespondToCommand(tflite::ErrorReporter* error_reporter,
@@ -38,25 +106,12 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
     is_initialized = true;
   }
 
-  // Toggle the blue LED every time an inference is performed.
-  am_devices_led_toggle(am_bsp_psLEDs, AM_BSP_LED_BLUE);
+  VisualizePredictionScore(score);
 
-  // Turn on LEDs corresponding to the detection for the cycle
-  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_RED);
-  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
-  am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
+  // Kept for debugging purposes.
   if (is_new_command) {
     TF_LITE_REPORT_ERROR(error_reporter, "Heard %s (%d) @%dms", found_command,
                          score, current_time);
-    if (found_command[0] == 'y') {
-      am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
-    }
-    if (found_command[0] == 'n') {
-      am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_RED);
-    }
-    if (found_command[0] == 'u') {
-      am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_GREEN);
-    }
   }
 }
 
